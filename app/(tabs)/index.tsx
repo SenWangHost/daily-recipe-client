@@ -1,6 +1,8 @@
+import { Button } from '@rneui/themed';
 import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { Alert, Platform, StyleSheet } from 'react-native';
 
+import { useGetRecipesQuery } from '@/api/recipeApi';
 import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
@@ -8,6 +10,22 @@ import { ThemedView } from '@/components/themed-view';
 import { Link } from 'expo-router';
 
 export default function HomeScreen() {
+  // RTK Query hooks
+  const { data: recipesData, isLoading: recipesLoading, error: recipesError } = useGetRecipesQuery({ page: 1, limit: 3 });
+
+  const handleTestButtonPress = () => {
+    if (recipesData) {
+      Alert.alert(
+        'RTK Query Test', 
+        `Found ${recipesData.total} recipes! First recipe: ${recipesData.recipes[0]?.title || 'None'}`
+      );
+    } else if (recipesError) {
+      Alert.alert('Error', 'Failed to fetch recipes');
+    } else {
+      Alert.alert('Loading', 'Fetching recipes...');
+    }
+  };
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -74,6 +92,27 @@ export default function HomeScreen() {
           <ThemedText type="defaultSemiBold">app-example</ThemedText>.
         </ThemedText>
       </ThemedView>
+      <ThemedView style={styles.stepContainer}>
+        <ThemedText type="subtitle">RTK Query Test</ThemedText>
+        <Button 
+          title={recipesLoading ? "Loading..." : "Test API Call"} 
+          onPress={handleTestButtonPress}
+          buttonStyle={styles.testButton}
+          disabled={recipesLoading}
+        />
+        {recipesData && (
+          <ThemedView style={styles.apiInfo}>
+            <ThemedText type="defaultSemiBold">API Status: ✅ Connected</ThemedText>
+            <ThemedText>Total Recipes: {recipesData.total}</ThemedText>
+            <ThemedText>First Recipe: {recipesData.recipes[0]?.title}</ThemedText>
+          </ThemedView>
+        )}
+        {recipesError && (
+          <ThemedView style={styles.apiInfo}>
+            <ThemedText type="defaultSemiBold" style={{ color: 'red' }}>API Status: ❌ Error</ThemedText>
+          </ThemedView>
+        )}
+      </ThemedView>
     </ParallaxScrollView>
   );
 }
@@ -94,5 +133,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     position: 'absolute',
+  },
+  testButton: {
+    marginTop: 8,
+    borderRadius: 8,
+  },
+  apiInfo: {
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    borderRadius: 8,
+    gap: 4,
   },
 });
