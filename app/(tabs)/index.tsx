@@ -1,8 +1,8 @@
 import { Button } from '@rneui/themed';
 import { Image } from 'expo-image';
-import { Alert, Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
-import { useGetRecipesQuery } from '@/api/recipeApi';
+import { useLazyGetHealthQuery } from '@/api/healthApi';
 import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
@@ -10,20 +10,11 @@ import { ThemedView } from '@/components/themed-view';
 import { Link } from 'expo-router';
 
 export default function HomeScreen() {
-  // RTK Query hooks
-  const { data: recipesData, isLoading: recipesLoading, error: recipesError } = useGetRecipesQuery({ page: 1, limit: 3 });
+  // RTK Query lazy hook for backend health
+  const [triggerHealth, { data: healthData, isFetching: healthLoading, error: healthError } ] = useLazyGetHealthQuery();
 
   const handleTestButtonPress = () => {
-    if (recipesData) {
-      Alert.alert(
-        'RTK Query Test', 
-        `Found ${recipesData.total} recipes! First recipe: ${recipesData.recipes[0]?.title || 'None'}`
-      );
-    } else if (recipesError) {
-      Alert.alert('Error', 'Failed to fetch recipes');
-    } else {
-      Alert.alert('Loading', 'Fetching recipes...');
-    }
+    triggerHealth();
   };
 
   return (
@@ -93,23 +84,24 @@ export default function HomeScreen() {
         </ThemedText>
       </ThemedView>
       <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">RTK Query Test</ThemedText>
+        <ThemedText type="subtitle">Backend Health</ThemedText>
         <Button 
-          title={recipesLoading ? "Loading..." : "Test API Call"} 
+          title={healthLoading ? "Checking..." : "Check Backend Health"} 
           onPress={handleTestButtonPress}
           buttonStyle={styles.testButton}
-          disabled={recipesLoading}
+          disabled={healthLoading}
         />
-        {recipesData && (
+        {healthData && (
           <ThemedView style={styles.apiInfo}>
-            <ThemedText type="defaultSemiBold">API Status: ✅ Connected</ThemedText>
-            <ThemedText>Total Recipes: {recipesData.total}</ThemedText>
-            <ThemedText>First Recipe: {recipesData.recipes[0]?.title}</ThemedText>
+            <ThemedText type="defaultSemiBold">API Status: ✅ {healthData.status}</ThemedText>
+            {healthData.service && <ThemedText>Service: {healthData.service}</ThemedText>}
+            {healthData.version && <ThemedText>Version: {healthData.version}</ThemedText>}
+            {healthData.timestamp && <ThemedText>Timestamp: {healthData.timestamp}</ThemedText>}
           </ThemedView>
         )}
-        {recipesError && (
+        {healthError && (
           <ThemedView style={styles.apiInfo}>
-            <ThemedText type="defaultSemiBold" style={{ color: 'red' }}>API Status: ❌ Error</ThemedText>
+            <ThemedText type="defaultSemiBold" style={{ color: 'red' }}>API Status: ❌ Unreachable</ThemedText>
           </ThemedView>
         )}
       </ThemedView>
